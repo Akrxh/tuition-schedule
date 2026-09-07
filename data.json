@@ -22,7 +22,8 @@
       "subject": "Chemistry",
       "day": "Thursday",
       "time": "07:30 PM",
-      "done": false
+      "done": false,
+      "absent": true
     },
     {
       "subject": "Computer",
