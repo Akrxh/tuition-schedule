@@ -1,0 +1,35 @@
+{
+  "classes": [
+    {
+      "subject": "Mathematics",
+      "day": "Monday",
+      "time": "4:00 PM",
+      "done": false
+    },
+    {
+      "subject": "Physics",
+      "day": "Tuesday",
+      "time": "5:30 PM",
+      "done": false
+    },
+    {
+      "subject": "Hindi Tuition",
+      "day": "Thursday",
+      "time": "3:00 PM",
+      "done": false
+    },
+    {
+      "subject": "Chemistry",
+      "day": "Friday",
+      "time": "5:00 PM",
+      "done": false
+    },
+    {
+      "subject": "Extra Revision Class",
+      "day": "Sunday",
+      "time": "11:00 AM",
+      "done": false
+    }
+  ],
+  "note": "Classes are automatically checked off as attended once their scheduled time passes each week."
+}
