@@ -1,33 +1,51 @@
 {
   "classes": [
     {
-      "subject": "Mathematics",
-      "day": "Monday",
-      "time": "4:00 PM",
-      "done": false
-    },
-    {
       "subject": "Physics",
-      "day": "Tuesday",
-      "time": "5:30 PM",
+      "day": "Sunday",
+      "time": "08:00 AM",
       "done": false
     },
     {
-      "subject": "Hindi Tuition",
-      "day": "Thursday",
-      "time": "3:00 PM",
+      "subject": "Biology",
+      "day": "Tuesday",
+      "time": "11:00 AM",
+      "done": false
+    },
+    {
+      "subject": "Computer",
+      "day": "Tuesday",
+      "time": "05:00 PM",
       "done": false
     },
     {
       "subject": "Chemistry",
-      "day": "Friday",
-      "time": "5:00 PM",
+      "day": "Thursday",
+      "time": "07:30 PM",
       "done": false
     },
     {
-      "subject": "Extra Revision Class",
-      "day": "Sunday",
-      "time": "11:00 AM",
+      "subject": "Computer",
+      "day": "Friday",
+      "time": "05:00 PM",
+      "done": false
+    },
+    {
+      "subject": "Physics",
+      "day": "Friday",
+      "time": "07:00 PM",
+      "done": false
+    },
+    {
+      "subject": "Biology",
+      "day": "Saturday",
+      "time": "06:00 PM",
+      "done": false
+    },
+    {
+      "subject": "Chemistry",
+      "day": "Saturday",
+      "time": "08:00 PM",
       "done": false
     }
   ],
