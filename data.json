@@ -1,7 +1,7 @@
 {
   "classes": [
     {
-      "subject": "Physics",
+      "subject": "Physics(no class)",
       "day": "Sunday",
       "time": "08:00 AM",
       "done": false
@@ -19,7 +19,7 @@
       "done": false
     },
     {
-      "subject": "Chemistry(absent)",
+      "subject": "Chemistry",
       "day": "Thursday",
       "time": "07:30 PM",
       "done": false
