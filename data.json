@@ -1,0 +1,13 @@
+{
+  "title": "Weekly Class Routine",
+  "note": "Schedule updated. Mondays and Wednesdays are free days.",
+  "days": [
+    { "day": "Monday", "classes": [] },
+    { "day": "Tuesday", "classes": [ { "subject": "Biology", "time": "11:00 AM" }, { "subject": "Computer", "time": "5:00 PM" } ] },
+    { "day": "Wednesday", "classes": [] },
+    { "day": "Thursday", "classes": [ { "subject": "Chemistry", "time": "7:30 PM" } ] },
+    { "day": "Friday", "classes": [ { "subject": "Computer", "time": "5:00 PM" }, { "subject": "Physics", "time": "7:00 PM" } ] },
+    { "day": "Saturday", "classes": [ { "subject": "Biology", "time": "6:00 PM" }, { "subject": "Chemistry", "time": "8:00 PM" } ] },
+    { "day": "Sunday", "classes": [ { "subject": "Physics", "time": "8:00 AM" } ] }
+  ]
+}
