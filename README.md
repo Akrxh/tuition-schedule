@@ -9,17 +9,6 @@ Firebase Firestore for real-time sync across devices.
 - `data.json` — blank starter data shape (for reference only; the app itself
   reads/writes Firestore, not this file)
 
-## Setup
-
-1. Open `index.html` in a browser, or host it (GitHub Pages, Netlify, any
-   static host).
-2. Firebase is already wired to the `tuition-schedule` project via the SDK
-   config at the top of the `<script type="module">` block. No build step,
-   no npm install — it's plain ES modules loaded from `gstatic.com`.
-3. Firestore needs a `classes` collection. It starts empty; use "Add Class"
-   in the app to create the first entry, which creates the collection
-   automatically.
-
 ## Data model
 
 Each document in the `classes` collection:
