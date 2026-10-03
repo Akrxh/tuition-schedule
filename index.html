@@ -29,11 +29,21 @@
   .comic-btn-white:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
   input, select { border:2px solid #000 !important; box-shadow:2px 2px 0 #000 !important; }
   input:focus, select:focus { outline:none; background:#fff; }
-  .tag { font-size:10px; font-weight:900; text-transform:uppercase; padding:2px 8px; border-radius:999px; border:2px solid #000; }
+  .tag { font-size:10px; font-weight:900; text-transform:uppercase; padding:2px 8px; border-radius:999px; border:2px solid #000; white-space:nowrap; }
   .tag-attending { background:#7fd858; animation:pulse 1.1s infinite; }
   .tag-online { background:#8ec9ff; }
   .tag-offline { background:#ffd166; }
   .tag-postponed { background:#ffb3b3; }
+  .tag-done { background:#3fae6a; color:#000; }
+  .tag-yet {
+    color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.65); letter-spacing:.3px;
+    background:
+      linear-gradient(118deg, rgba(255,130,130,0) 0%, rgba(255,95,95,.60) 16%, rgba(255,200,200,.25) 22%, rgba(255,95,95,0) 34%),
+      linear-gradient(72deg, rgba(0,0,0,0) 38%, rgba(50,0,0,.60) 52%, rgba(255,60,60,.50) 66%, rgba(0,0,0,0) 84%),
+      linear-gradient(165deg, #a10018 0%, #e0121f 32%, #6a000f 58%, #c8101e 82%, #8a0014 100%);
+    box-shadow: inset 0 1px 1px rgba(255,190,190,.55), inset 0 -2px 3px rgba(0,0,0,.40);
+  }
+  .tag-temp { background:#e6c8ff; }
   @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
   @keyframes popIn { 0%{transform:scale(.94);opacity:0;} 100%{transform:scale(1);opacity:1;} }
   .animate-pop { animation:popIn .2s cubic-bezier(.16,1,.3,1) forwards; }
@@ -41,7 +51,7 @@
   /* connection dot: a single small colored dot, no text, so it never crowds the nav bar */
   #conn-dot {
     width:12px; height:12px; border-radius:999px; border:2px solid #000;
-    background:#9ca3af; shrink:0; flex-shrink:0;
+    background:#9ca3af; flex-shrink:0;
   }
   #conn-dot.online { background:#16a34a; }
   #conn-dot.syncing { background:#eab308; animation:pulse 1s infinite; }
@@ -104,8 +114,9 @@
 
 </main>
 
+<!-- ============ ADD / EDIT CLASS ============ -->
 <div id="edit-modal" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4 hidden">
-  <div class="comic-panel rounded-2xl p-6 max-w-sm w-full bg-white space-y-4 animate-pop">
+  <div class="comic-panel rounded-2xl p-6 max-w-sm w-full bg-white space-y-4 animate-pop max-h-[90vh] overflow-y-auto">
     <div class="flex justify-between items-center">
       <h3 class="manga-title text-xl uppercase" id="modal-title">Edit Class</h3>
       <button onclick="closeModal()" class="w-7 h-7 rounded-lg border-2 border-black bg-gray-100 flex items-center justify-center"><i class="fa-solid fa-xmark text-xs"></i></button>
@@ -143,6 +154,31 @@
       </div>
       <button type="submit" class="w-full py-3 rounded-xl comic-btn font-black text-sm uppercase">Save Class</button>
     </form>
+
+    <!-- Temporary time change: separate from the permanent edit above (only shown when editing an existing class) -->
+    <div id="temp-section" class="hidden border-t-2 border-dashed border-black pt-4 space-y-3">
+      <div>
+        <h4 class="manga-title text-lg uppercase"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Temporary Time</h4>
+        <p class="text-[11px] font-semibold text-gray-600">Shift the time for one date only. The regular schedule stays the same.</p>
+      </div>
+      <div>
+        <label class="block text-xs font-black uppercase mb-1">On date</label>
+        <input type="date" id="t-date" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-black uppercase mb-1">New Start</label>
+          <input type="time" id="t-start" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+        </div>
+        <div>
+          <label class="block text-xs font-black uppercase mb-1">New End</label>
+          <input type="time" id="t-end" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+        </div>
+      </div>
+      <div id="t-error" class="text-xs font-bold text-red-600 min-h-[0.5rem]"></div>
+      <button type="button" onclick="applyTempTime()" class="w-full py-3 rounded-xl comic-btn-white font-black text-sm uppercase">Apply Temporary Time</button>
+      <div id="t-list" class="space-y-2"></div>
+    </div>
   </div>
 </div>
 
@@ -438,12 +474,29 @@ function occursOnDate(c, dateObj) {
   return c.day === weekday;
 }
 
-function classStatus(c, now) {
+// Effective timing for a specific date: a temporary override if one exists, else the regular time.
+function effectiveTimes(c, dateStr) {
+  const o = (c.timeOverrides || {})[dateStr];
+  if (o && o.start && o.end) return { start: o.start, end: o.end, temp: true };
+  return { start: c.start, end: c.end, temp: false };
+}
+
+// "attending" | "upcoming" | "done" for a class on a given date.
+function classStatus(c, dateStr, now) {
+  const todayStr = formatDate(now);
+  if (dateStr > todayStr) return "upcoming";
+  if (dateStr < todayStr) return "done";
+  const t = effectiveTimes(c, dateStr);
   const nowMin = now.getHours()*60 + now.getMinutes();
-  const start = toMinutes(c.start), end = toMinutes(c.end);
-  if (nowMin >= start && nowMin < end) return "attending";
-  if (nowMin < start) return "upcoming";
-  return "past";
+  if (nowMin >= toMinutes(t.start) && nowMin < toMinutes(t.end)) return "attending";
+  if (nowMin < toMinutes(t.start)) return "upcoming";
+  return "done";
+}
+
+function sortedForDate(dateObj) {
+  const dateStr = formatDate(dateObj);
+  return classes.filter(c => occursOnDate(c, dateObj))
+    .sort((a,b) => toMinutes(effectiveTimes(a, dateStr).start) - toMinutes(effectiveTimes(b, dateStr).start));
 }
 
 function renderAll() {
@@ -451,25 +504,28 @@ function renderAll() {
   const tomorrowDate = new Date(now); tomorrowDate.setDate(now.getDate()+1);
   document.getElementById("today-heading").innerText = WEEKDAYS[now.getDay()];
   renderToday(now);
-  renderTomorrow(tomorrowDate);
+  renderTomorrow(tomorrowDate, now);
   renderWeek(now);
   renderCancelled();
+  // keep the temporary-time list in the edit modal fresh if it's open
+  if (!document.getElementById("edit-modal").classList.contains("hidden")) renderTempList();
 }
 
 function renderToday(now) {
-  const todays = classes.filter(c => occursOnDate(c, now))
-    .sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+  const todays = sortedForDate(now);
+  const todayStr = formatDate(now);
 
   const livePanel = document.getElementById("live-panel");
-  const attending = todays.find(c => classStatus(c, now) === "attending");
+  const attending = todays.find(c => classStatus(c, todayStr, now) === "attending");
 
   if (attending) {
+    const t = effectiveTimes(attending, todayStr);
     livePanel.innerHTML = `
       <div class="comic-panel rounded-2xl p-5 flex items-center justify-between gap-3">
         <div>
           <span class="tag tag-attending">Attending</span>
           <h2 class="manga-title text-2xl uppercase mt-1">${escapeHtml(attending.subject)}</h2>
-          <p class="text-sm font-bold text-gray-700">${attending.start} - ${attending.end} &bull; ${attending.mode === 'online' ? 'Online' : 'Offline'}</p>
+          <p class="text-sm font-bold text-gray-700">${t.start} - ${t.end} &bull; ${attending.mode === 'online' ? 'Online' : 'Offline'}</p>
         </div>
         <i class="fa-solid fa-bolt text-3xl"></i>
       </div>`;
@@ -488,20 +544,18 @@ function renderToday(now) {
     list.innerHTML = '<p class="text-xs font-bold text-gray-500 italic">No class today</p>';
     return;
   }
-  const todayStr = formatDate(now);
-  list.innerHTML = todays.map(c => renderClassCard(c, classStatus(c, now), todayStr)).join("");
+  list.innerHTML = todays.map(c => renderClassCard(c, todayStr, now)).join("");
 }
 
-function renderTomorrow(tomorrowDate) {
+function renderTomorrow(tomorrowDate, now) {
   const list = document.getElementById("tomorrow-list");
-  const tomorrows = classes.filter(c => occursOnDate(c, tomorrowDate))
-    .sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+  const tomorrows = sortedForDate(tomorrowDate);
   if (!tomorrows.length) {
     list.innerHTML = '<p class="text-xs font-bold text-gray-500 italic">No class tomorrow</p>';
     return;
   }
   const tomorrowStr = formatDate(tomorrowDate);
-  list.innerHTML = tomorrows.map(c => renderClassCard(c, "other", tomorrowStr)).join("");
+  list.innerHTML = tomorrows.map(c => renderClassCard(c, tomorrowStr, now)).join("");
 }
 
 function renderWeek(now) {
@@ -510,8 +564,8 @@ function renderWeek(now) {
   container.innerHTML = WEEKDAYS.map((day, idx) => {
     const offset = (idx - todayIdx + 7) % 7;
     const dateObj = new Date(now); dateObj.setDate(now.getDate() + offset);
-    const dayClasses = classes.filter(c => occursOnDate(c, dateObj))
-      .sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+    const dateStr = formatDate(dateObj);
+    const dayClasses = sortedForDate(dateObj);
     const isToday = offset === 0;
     return `
       <div class="comic-panel rounded-2xl p-4 ${isToday ? 'ring-2 ring-black' : ''}">
@@ -519,7 +573,7 @@ function renderWeek(now) {
           <h3 class="manga-title text-lg uppercase">${day}${isToday ? ' <span class="text-xs align-middle">(Today)</span>' : ''}</h3>
         </div>
         <div class="space-y-2">
-          ${dayClasses.length ? dayClasses.map(c => renderClassCard(c, "other", formatDate(dateObj))).join("") : '<p class="text-xs font-bold text-gray-500 italic">No class</p>'}
+          ${dayClasses.length ? dayClasses.map(c => renderClassCard(c, dateStr, now)).join("") : '<p class="text-xs font-bold text-gray-500 italic">No class</p>'}
         </div>
       </div>`;
   }).join("");
@@ -544,27 +598,37 @@ function renderCancelled() {
     return;
   }
 
-  container.innerHTML = entries.map(({ c, dateStr }) => `
+  container.innerHTML = entries.map(({ c, dateStr }) => {
+    const t = effectiveTimes(c, dateStr);
+    return `
     <div class="border-2 border-black rounded-xl p-3 flex items-center justify-between gap-3 bg-gray-50">
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-1.5 mb-1">
           <h4 class="font-black text-sm truncate">${escapeHtml(c.subject)}</h4>
           <span class="tag" style="background:#e5e5e5;">Cancelled</span>
         </div>
-        <p class="text-xs font-bold text-gray-700">${formatDateLabel(dateStr)} &bull; ${c.start} - ${c.end}</p>
+        <p class="text-xs font-bold text-gray-700">${formatDateLabel(dateStr)} &bull; ${t.start} - ${t.end}</p>
       </div>
       ${isAdmin ? `
       <button onclick="restoreOccurrence('${c.id}','${dateStr}')" class="comic-btn-white px-3 py-1.5 rounded-lg text-xs font-black uppercase shrink-0" title="Restore this class">
         <i class="fa-solid fa-rotate-left mr-1"></i>Restore
       </button>` : ``}
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }
 
-function renderClassCard(c, status, dateStr) {
+function renderClassCard(c, dateStr, now) {
+  const t = effectiveTimes(c, dateStr);
+  const status = classStatus(c, dateStr, now);
+
   const modeTag = c.mode === "online"
     ? '<span class="tag tag-online">Online</span>'
     : '<span class="tag tag-offline">Offline</span>';
-  const attendingTag = status === "attending" ? '<span class="tag tag-attending">Attending</span>' : '';
+  const statusTag =
+    status === "attending" ? '<span class="tag tag-attending">Attending</span>' :
+    status === "done"      ? '<span class="tag tag-done">Done</span>' :
+                             '<span class="tag tag-yet">Yet to attend</span>';
+  const tempTag = t.temp ? '<span class="tag tag-temp">Time changed</span>' : '';
   const postponedTag = c.postponed && c.postponedDate ? `<span class="tag tag-postponed">Postponed to ${formatDateLabel(c.postponedDate)}</span>` : '';
 
   return `
@@ -572,9 +636,9 @@ function renderClassCard(c, status, dateStr) {
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-1.5 mb-1">
           <h4 class="font-black text-sm truncate">${escapeHtml(c.subject)}</h4>
-          ${modeTag}${attendingTag}${postponedTag}
+          ${modeTag}${statusTag}${tempTag}${postponedTag}
         </div>
-        <p class="text-xs font-bold text-gray-700">${c.start} - ${c.end} &bull; ${c.day}</p>
+        <p class="text-xs font-bold text-gray-700">${t.start} - ${t.end} &bull; ${WEEKDAYS[new Date(dateStr + "T00:00:00").getDay()]}</p>
       </div>
       ${isAdmin ? `
       <div class="flex items-center gap-1.5 shrink-0">
@@ -589,8 +653,8 @@ function renderClassCard(c, status, dateStr) {
           : ``
         }
         <button onclick="cancelOccurrence('${c.id}','${dateStr}')" class="comic-btn-white w-8 h-8 rounded-lg flex items-center justify-center text-xs" title="Cancel this class"><i class="fa-solid fa-ban"></i></button>
-        <button onclick="editClass('${c.id}')" class="comic-btn-white w-8 h-8 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
-        <button onclick="deleteClass('${c.id}')" class="comic-btn-white w-8 h-8 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
+        <button onclick="editClass('${c.id}')" class="comic-btn-white w-8 h-8 rounded-lg flex items-center justify-center text-xs" title="Edit"><i class="fa-solid fa-pen"></i></button>
+        <button onclick="deleteClass('${c.id}')" class="comic-btn-white w-8 h-8 rounded-lg flex items-center justify-center text-xs" title="Delete"><i class="fa-solid fa-trash"></i></button>
       </div>` : ``}
     </div>`;
 }
@@ -638,8 +702,19 @@ window.openAddModal = function() {
   document.getElementById("modal-title").innerText = "Add Class";
   document.getElementById("f-id").value = "";
   document.getElementById("class-form").reset();
+  document.getElementById("temp-section").classList.add("hidden");
   document.getElementById("edit-modal").classList.remove("hidden");
 };
+
+// Next date (today included) on which this class's weekday falls.
+function nextOccurrenceDate(c) {
+  const d = new Date();
+  for (let i = 0; i < 7; i++) {
+    if (WEEKDAYS[d.getDay()] === c.day) break;
+    d.setDate(d.getDate() + 1);
+  }
+  return formatDate(d);
+}
 
 window.editClass = function(id) {
   if (!isAdmin) return;
@@ -652,11 +727,84 @@ window.editClass = function(id) {
   document.getElementById("f-mode").value = c.mode;
   document.getElementById("f-start").value = c.start;
   document.getElementById("f-end").value = c.end;
+
+  // temporary time section
+  document.getElementById("temp-section").classList.remove("hidden");
+  document.getElementById("t-date").value = (c.postponed && c.postponedDate) ? c.postponedDate : nextOccurrenceDate(c);
+  document.getElementById("t-start").value = c.start;
+  document.getElementById("t-end").value = c.end;
+  document.getElementById("t-error").innerText = "";
+  renderTempList();
+
   document.getElementById("edit-modal").classList.remove("hidden");
 };
 
 window.closeModal = function() {
   document.getElementById("edit-modal").classList.add("hidden");
+};
+
+function renderTempList() {
+  const id = document.getElementById("f-id").value;
+  const box = document.getElementById("t-list");
+  const c = id ? classes.find(x => x.id === id) : null;
+  if (!c) { box.innerHTML = ""; return; }
+  const today = formatDate(new Date());
+  const entries = Object.entries(c.timeOverrides || {})
+    .filter(([d]) => d >= today)
+    .sort((a,b) => a[0].localeCompare(b[0]));
+  if (!entries.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `
+    <p class="text-[10px] font-black uppercase text-gray-500">Active temporary changes</p>` +
+    entries.map(([d, o]) => `
+    <div class="flex items-center justify-between gap-2 border-2 border-black rounded-lg px-2 py-1.5 bg-pink-50">
+      <span class="text-xs font-bold">${formatDateLabel(d)} &bull; ${o.start} - ${o.end}</span>
+      <button type="button" onclick="removeTempTime('${d}')" class="comic-btn-white w-7 h-7 rounded-md flex items-center justify-center text-[10px]" title="Remove this temporary change">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>`).join("");
+}
+
+window.applyTempTime = async function() {
+  if (!isAdmin) return;
+  const id = document.getElementById("f-id").value;
+  const c = classes.find(x => x.id === id);
+  if (!c) return;
+  const date = document.getElementById("t-date").value;
+  const start = document.getElementById("t-start").value;
+  const end = document.getElementById("t-end").value;
+  const err = document.getElementById("t-error");
+  err.innerText = "";
+  if (!date || !start || !end) { err.innerText = "Pick a date, start and end time."; return; }
+  if (toMinutes(end) <= toMinutes(start)) { err.innerText = "End time must be after start time."; return; }
+  const overrides = { ...(c.timeOverrides || {}) };
+  if (start === c.start && end === c.end) {
+    delete overrides[date]; // same as regular time → nothing to override
+  } else {
+    overrides[date] = { start, end };
+  }
+  try {
+    setConn("syncing", "Saving...");
+    await updateDoc(doc(db, "classes", id), { timeOverrides: overrides });
+  } catch (e) {
+    console.error(e);
+    err.innerText = "Could not save. Check connection.";
+  }
+};
+
+window.removeTempTime = async function(dateStr) {
+  if (!isAdmin) return;
+  const id = document.getElementById("f-id").value;
+  const c = classes.find(x => x.id === id);
+  if (!c) return;
+  const overrides = { ...(c.timeOverrides || {}) };
+  delete overrides[dateStr];
+  try {
+    setConn("syncing", "Saving...");
+    await updateDoc(doc(db, "classes", id), { timeOverrides: overrides });
+  } catch (e) {
+    console.error(e);
+    alert("Failed to remove temporary time.");
+  }
 };
 
 document.getElementById("class-form").addEventListener("submit", async (e) => {
@@ -671,7 +819,8 @@ document.getElementById("class-form").addEventListener("submit", async (e) => {
     end: document.getElementById("f-end").value,
     postponed: existing ? (existing.postponed || false) : false,
     postponedDate: existing ? (existing.postponedDate || null) : null,
-    cancelledDates: existing ? (existing.cancelledDates || []) : []
+    cancelledDates: existing ? (existing.cancelledDates || []) : [],
+    timeOverrides: existing ? (existing.timeOverrides || {}) : {}
   };
   const docId = id || ("c_" + Date.now() + "_" + Math.random().toString(36).slice(2));
   try {
