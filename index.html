@@ -34,7 +34,14 @@
   .tag-online { background:#8ec9ff; }
   .tag-offline { background:#ffd166; }
   .tag-postponed { background:#ffb3b3; }
-  .tag-done { background:#3fae6a; color:#000; }
+  .tag-done {
+    color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.65); letter-spacing:.3px;
+    background:
+      linear-gradient(118deg, rgba(150,255,170,0) 0%, rgba(110,235,140,.60) 16%, rgba(210,255,220,.25) 22%, rgba(110,235,140,0) 34%),
+      linear-gradient(72deg, rgba(0,0,0,0) 38%, rgba(0,40,10,.60) 52%, rgba(60,220,110,.50) 66%, rgba(0,0,0,0) 84%),
+      linear-gradient(165deg, #0a7a2e 0%, #17b34a 32%, #05501d 58%, #10a040 82%, #08662a 100%);
+    box-shadow: inset 0 1px 1px rgba(190,255,205,.55), inset 0 -2px 3px rgba(0,0,0,.40);
+  }
   .tag-yet {
     color:#fff; text-shadow:0 1px 1px rgba(0,0,0,.65); letter-spacing:.3px;
     background:
@@ -56,6 +63,28 @@
   #conn-dot.online { background:#16a34a; }
   #conn-dot.syncing { background:#eab308; animation:pulse 1s infinite; }
   #conn-dot.offline { background:#dc2626; }
+
+  /* ---- custom pickers (replace the native dropdowns / time & date inputs) ---- */
+  .chip { background:#fff; color:#000; border:2px solid #000; border-radius:12px; padding:9px 0; font-weight:800; font-size:11px;
+          box-shadow:2px 2px 0 #000; transition:.1s; text-align:center; cursor:pointer; }
+  .chip:active { transform:translate(1px,1px); box-shadow:1px 1px 0 #000; }
+  .chip-on { background:#000; color:#fff; }
+  .time-btn { width:100%; display:flex; align-items:center; gap:8px; background:#f9fafb; border:2px solid #000; border-radius:12px;
+              padding:10px 12px; font-weight:800; font-size:14px; box-shadow:2px 2px 0 #000; text-align:left; transition:.1s; }
+  .time-btn:active { transform:translate(1px,1px); box-shadow:1px 1px 0 #000; }
+  .time-btn i { font-size:12px; opacity:.7; }
+  .date-strip { display:flex; gap:8px; overflow-x:auto; padding:2px 4px 8px 2px; position:relative; scrollbar-width:none; }
+  .date-strip::-webkit-scrollbar { display:none; }
+  .date-chip { flex:0 0 auto; width:58px; display:flex; flex-direction:column; align-items:center; padding:6px 0; background:#fff; color:#000;
+               border:2px solid #000; border-radius:14px; box-shadow:2px 2px 0 #000; transition:.1s; cursor:pointer; }
+  .date-chip:active { transform:translate(1px,1px); box-shadow:1px 1px 0 #000; }
+  .date-chip .dc-wd { font-size:10px; font-weight:800; text-transform:uppercase; opacity:.65; }
+  .date-chip .dc-d { font-family:"Bangers", cursive; font-size:24px; line-height:1.1; letter-spacing:1px; }
+  .date-chip .dc-m { font-size:10px; font-weight:700; opacity:.75; }
+  .date-on { background:#000; color:#fff; }
+  .tp-col { max-height:210px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:2px 4px 6px 2px; position:relative; scrollbar-width:none; }
+  .tp-col::-webkit-scrollbar { display:none; }
+  .tp-col .chip { padding:11px 0; font-size:15px; }
 </style>
 </head>
 <body class="pb-20">
@@ -127,29 +156,26 @@
         <label class="block text-xs font-black uppercase mb-1">Subject</label>
         <input type="text" id="f-subject" required class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
       </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-xs font-black uppercase mb-1">Day</label>
-          <select id="f-day" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
-            <option>Sunday</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-            <option>Thursday</option><option>Friday</option><option>Saturday</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-black uppercase mb-1">Mode</label>
-          <select id="f-mode" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
-            <option value="online">Online</option><option value="offline">Offline</option>
-          </select>
-        </div>
+      <div>
+        <label class="block text-xs font-black uppercase mb-1">Day</label>
+        <input type="hidden" id="f-day" value="Sunday">
+        <div id="day-seg" class="flex gap-1.5"></div>
+      </div>
+      <div>
+        <label class="block text-xs font-black uppercase mb-1">Mode</label>
+        <input type="hidden" id="f-mode" value="online">
+        <div id="mode-seg" class="grid grid-cols-2 gap-2"></div>
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div>
           <label class="block text-xs font-black uppercase mb-1">Start Time</label>
-          <input type="time" id="f-start" required class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+          <input type="hidden" id="f-start">
+          <button type="button" onclick="openTimePicker('f-start')" class="time-btn"><i class="fa-regular fa-clock"></i><span id="f-start-btn">Select</span></button>
         </div>
         <div>
           <label class="block text-xs font-black uppercase mb-1">End Time</label>
-          <input type="time" id="f-end" required class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+          <input type="hidden" id="f-end">
+          <button type="button" onclick="openTimePicker('f-end')" class="time-btn"><i class="fa-regular fa-clock"></i><span id="f-end-btn">Select</span></button>
         </div>
       </div>
       <button type="submit" class="w-full py-3 rounded-xl comic-btn font-black text-sm uppercase">Save Class</button>
@@ -163,16 +189,19 @@
       </div>
       <div>
         <label class="block text-xs font-black uppercase mb-1">On date</label>
-        <input type="date" id="t-date" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+        <input type="hidden" id="t-date">
+        <div id="t-date-strip" class="date-strip"></div>
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div>
           <label class="block text-xs font-black uppercase mb-1">New Start</label>
-          <input type="time" id="t-start" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+          <input type="hidden" id="t-start">
+          <button type="button" onclick="openTimePicker('t-start')" class="time-btn"><i class="fa-regular fa-clock"></i><span id="t-start-btn">Select</span></button>
         </div>
         <div>
           <label class="block text-xs font-black uppercase mb-1">New End</label>
-          <input type="time" id="t-end" class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+          <input type="hidden" id="t-end">
+          <button type="button" onclick="openTimePicker('t-end')" class="time-btn"><i class="fa-regular fa-clock"></i><span id="t-end-btn">Select</span></button>
         </div>
       </div>
       <div id="t-error" class="text-xs font-bold text-red-600 min-h-[0.5rem]"></div>
@@ -192,9 +221,27 @@
     <input type="hidden" id="pp-id">
     <div>
       <label class="block text-xs font-black uppercase mb-1">Postpone to date</label>
-      <input type="date" id="pp-date" required class="w-full rounded-xl px-3 py-2.5 font-bold text-sm bg-gray-50">
+      <input type="hidden" id="pp-date">
+      <div id="pp-date-strip" class="date-strip"></div>
     </div>
     <button onclick="confirmPostpone()" class="w-full py-3 rounded-xl comic-btn font-black text-sm uppercase">Save Date</button>
+  </div>
+</div>
+
+<!-- ============ TIME PICKER ============ -->
+<div id="time-modal" class="fixed inset-0 z-[70] modal-backdrop flex items-center justify-center p-4 hidden">
+  <div class="comic-panel rounded-3xl p-5 max-w-sm w-full bg-white space-y-4 animate-pop">
+    <div class="flex justify-between items-center">
+      <h3 class="manga-title text-xl uppercase">Pick Time</h3>
+      <button type="button" onclick="closeTimePicker()" class="w-7 h-7 rounded-lg border-2 border-black bg-gray-100 flex items-center justify-center"><i class="fa-solid fa-xmark text-xs"></i></button>
+    </div>
+    <div id="tp-preview" class="manga-title text-4xl text-center py-2 border-2 border-black rounded-2xl bg-yellow-100">4:00 PM</div>
+    <div class="grid grid-cols-3 gap-3">
+      <div><p class="text-[10px] font-black uppercase text-gray-500 mb-1 text-center">Hour</p><div id="tp-hours" class="tp-col"></div></div>
+      <div><p class="text-[10px] font-black uppercase text-gray-500 mb-1 text-center">Minute</p><div id="tp-mins" class="tp-col"></div></div>
+      <div><p class="text-[10px] font-black uppercase text-gray-500 mb-1 text-center">AM / PM</p><div id="tp-ap" class="tp-col"></div></div>
+    </div>
+    <button type="button" onclick="confirmTime()" class="w-full py-3 rounded-xl comic-btn font-black text-sm uppercase">Set Time</button>
   </div>
 </div>
 
@@ -453,6 +500,108 @@ window.addEventListener("offline", () => setConn("offline", "Offline"));
 
 function toMinutes(t) { const [h,m] = t.split(":").map(Number); return h*60+m; }
 
+// ---- 12-hour display ----
+function fmtTime(t) {
+  if (!t) return "--:--";
+  const [h, m] = t.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
+
+function centerIn(box, sel, axis) {
+  const el = box.querySelector(sel);
+  if (!el) return;
+  if (axis === "x") box.scrollLeft = el.offsetLeft - box.clientWidth / 2 + el.offsetWidth / 2;
+  else box.scrollTop = el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2;
+}
+
+// ---- Day + Mode segmented selectors ----
+function renderDaySeg() {
+  const v = document.getElementById("f-day").value;
+  document.getElementById("day-seg").innerHTML = WEEKDAYS.map(d =>
+    `<button type="button" onclick="setDay('${d}')" class="chip flex-1 ${d === v ? 'chip-on' : ''}" style="padding-left:0;padding-right:0;">${d.slice(0,3)}</button>`
+  ).join("");
+}
+window.setDay = function(d) { document.getElementById("f-day").value = d; renderDaySeg(); };
+
+function renderModeSeg() {
+  const v = document.getElementById("f-mode").value;
+  const opt = (val, label, icon) =>
+    `<button type="button" onclick="setMode('${val}')" class="chip ${v === val ? 'chip-on' : ''}" style="font-size:12px;"><i class="fa-solid ${icon} mr-1"></i>${label}</button>`;
+  document.getElementById("mode-seg").innerHTML = opt("online", "Online", "fa-wifi") + opt("offline", "Offline", "fa-location-dot");
+}
+window.setMode = function(m) { document.getElementById("f-mode").value = m; renderModeSeg(); };
+
+// ---- Custom time picker ----
+let tpTarget = null, tpH = 4, tpM = 0, tpAP = "PM";
+
+function refreshTimeBtns() {
+  ["f-start", "f-end", "t-start", "t-end"].forEach(id => {
+    const el = document.getElementById(id + "-btn");
+    if (el) el.innerText = document.getElementById(id).value ? fmtTime(document.getElementById(id).value) : "Select";
+  });
+}
+
+window.openTimePicker = function(id) {
+  tpTarget = id;
+  const v = document.getElementById(id).value || "16:00";
+  const [h, m] = v.split(":").map(Number);
+  tpH = h % 12 || 12; tpM = m; tpAP = h >= 12 ? "PM" : "AM";
+  document.getElementById("time-modal").classList.remove("hidden");
+  renderTimePicker(true);
+};
+window.closeTimePicker = function() { document.getElementById("time-modal").classList.add("hidden"); };
+
+window.tpSet = function(k, v) {
+  if (k === "h") tpH = v; else if (k === "m") tpM = v; else tpAP = v;
+  renderTimePicker(false);
+};
+
+function renderTimePicker(center) {
+  const cols = { h: document.getElementById("tp-hours"), m: document.getElementById("tp-mins"), a: document.getElementById("tp-ap") };
+  const saved = { h: cols.h.scrollTop, m: cols.m.scrollTop, a: cols.a.scrollTop };
+  const chip = (k, v, label, on) => `<button type="button" onclick="tpSet('${k}', ${typeof v === 'string' ? `'${v}'` : v})" class="chip ${on ? 'chip-on' : ''}">${label}</button>`;
+  cols.h.innerHTML = Array.from({ length: 12 }, (_, i) => i + 1).map(h => chip("h", h, h, h === tpH)).join("");
+  let mins = Array.from({ length: 12 }, (_, i) => i * 5);
+  if (!mins.includes(tpM)) { mins.push(tpM); mins.sort((a, b) => a - b); }
+  cols.m.innerHTML = mins.map(m => chip("m", m, String(m).padStart(2, "0"), m === tpM)).join("");
+  cols.a.innerHTML = ["AM", "PM"].map(a => chip("a", a, a, a === tpAP)).join("");
+  document.getElementById("tp-preview").innerText = `${tpH}:${String(tpM).padStart(2, "0")} ${tpAP}`;
+  Object.keys(cols).forEach(k => {
+    if (center) centerIn(cols[k], ".chip-on", "y"); else cols[k].scrollTop = saved[k];
+  });
+}
+
+window.confirmTime = function() {
+  const h24 = (tpH % 12) + (tpAP === "PM" ? 12 : 0);
+  document.getElementById(tpTarget).value = `${String(h24).padStart(2, "0")}:${String(tpM).padStart(2, "0")}`;
+  refreshTimeBtns();
+  closeTimePicker();
+};
+
+// ---- Date chip strip (next 4 weeks) ----
+function renderDateStrip(containerId, inputId, center) {
+  const box = document.getElementById(containerId);
+  const sel = document.getElementById(inputId).value;
+  const saved = box.scrollLeft;
+  const todayStr = formatDate(new Date());
+  const list = [];
+  for (let i = 0; i < 28; i++) { const d = new Date(); d.setDate(d.getDate() + i); list.push(formatDate(d)); }
+  if (sel && !list.includes(sel)) { list.push(sel); list.sort(); }
+  box.innerHTML = list.map(ds => {
+    const [y, m, d] = ds.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    const wd = ds === todayStr ? "Today" : dt.toLocaleDateString("en-US", { weekday: "short" });
+    const mon = dt.toLocaleDateString("en-US", { month: "short" });
+    return `<button type="button" onclick="pickDate('${containerId}','${inputId}','${ds}')" class="date-chip ${ds === sel ? 'date-on' : ''}">
+      <span class="dc-wd">${wd}</span><span class="dc-d">${d}</span><span class="dc-m">${mon}</span></button>`;
+  }).join("");
+  if (center) centerIn(box, ".date-on", "x"); else box.scrollLeft = saved;
+}
+window.pickDate = function(containerId, inputId, ds) {
+  document.getElementById(inputId).value = ds;
+  renderDateStrip(containerId, inputId, false);
+};
+
 function formatDate(d) {
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
@@ -525,7 +674,7 @@ function renderToday(now) {
         <div>
           <span class="tag tag-attending">Attending</span>
           <h2 class="manga-title text-2xl uppercase mt-1">${escapeHtml(attending.subject)}</h2>
-          <p class="text-sm font-bold text-gray-700">${t.start} - ${t.end} &bull; ${attending.mode === 'online' ? 'Online' : 'Offline'}</p>
+          <p class="text-sm font-bold text-gray-700">${fmtTime(t.start)} - ${fmtTime(t.end)} &bull; ${attending.mode === 'online' ? 'Online' : 'Offline'}</p>
         </div>
         <i class="fa-solid fa-bolt text-3xl"></i>
       </div>`;
@@ -607,7 +756,7 @@ function renderCancelled() {
           <h4 class="font-black text-sm truncate">${escapeHtml(c.subject)}</h4>
           <span class="tag" style="background:#e5e5e5;">Cancelled</span>
         </div>
-        <p class="text-xs font-bold text-gray-700">${formatDateLabel(dateStr)} &bull; ${t.start} - ${t.end}</p>
+        <p class="text-xs font-bold text-gray-700">${formatDateLabel(dateStr)} &bull; ${fmtTime(t.start)} - ${fmtTime(t.end)}</p>
       </div>
       ${isAdmin ? `
       <button onclick="restoreOccurrence('${c.id}','${dateStr}')" class="comic-btn-white px-3 py-1.5 rounded-lg text-xs font-black uppercase shrink-0" title="Restore this class">
@@ -638,7 +787,7 @@ function renderClassCard(c, dateStr, now) {
           <h4 class="font-black text-sm truncate">${escapeHtml(c.subject)}</h4>
           ${modeTag}${statusTag}${tempTag}${postponedTag}
         </div>
-        <p class="text-xs font-bold text-gray-700">${t.start} - ${t.end} &bull; ${WEEKDAYS[new Date(dateStr + "T00:00:00").getDay()]}</p>
+        <p class="text-xs font-bold text-gray-700">${fmtTime(t.start)} - ${fmtTime(t.end)} &bull; ${WEEKDAYS[new Date(dateStr + "T00:00:00").getDay()]}</p>
       </div>
       ${isAdmin ? `
       <div class="flex items-center gap-1.5 shrink-0">
@@ -702,6 +851,12 @@ window.openAddModal = function() {
   document.getElementById("modal-title").innerText = "Add Class";
   document.getElementById("f-id").value = "";
   document.getElementById("class-form").reset();
+  document.getElementById("f-subject").value = "";
+  document.getElementById("f-day").value = WEEKDAYS[new Date().getDay()];
+  document.getElementById("f-mode").value = "online";
+  document.getElementById("f-start").value = "";
+  document.getElementById("f-end").value = "";
+  renderDaySeg(); renderModeSeg(); refreshTimeBtns();
   document.getElementById("temp-section").classList.add("hidden");
   document.getElementById("edit-modal").classList.remove("hidden");
 };
@@ -734,9 +889,11 @@ window.editClass = function(id) {
   document.getElementById("t-start").value = c.start;
   document.getElementById("t-end").value = c.end;
   document.getElementById("t-error").innerText = "";
+  renderDaySeg(); renderModeSeg(); refreshTimeBtns();
   renderTempList();
 
   document.getElementById("edit-modal").classList.remove("hidden");
+  renderDateStrip("t-date-strip", "t-date", true);
 };
 
 window.closeModal = function() {
@@ -757,7 +914,7 @@ function renderTempList() {
     <p class="text-[10px] font-black uppercase text-gray-500">Active temporary changes</p>` +
     entries.map(([d, o]) => `
     <div class="flex items-center justify-between gap-2 border-2 border-black rounded-lg px-2 py-1.5 bg-pink-50">
-      <span class="text-xs font-bold">${formatDateLabel(d)} &bull; ${o.start} - ${o.end}</span>
+      <span class="text-xs font-bold">${formatDateLabel(d)} &bull; ${fmtTime(o.start)} - ${fmtTime(o.end)}</span>
       <button type="button" onclick="removeTempTime('${d}')" class="comic-btn-white w-7 h-7 rounded-md flex items-center justify-center text-[10px]" title="Remove this temporary change">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -809,6 +966,8 @@ window.removeTempTime = async function(dateStr) {
 
 document.getElementById("class-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (!document.getElementById("f-start").value || !document.getElementById("f-end").value) { alert("Please select start and end time."); return; }
+  if (toMinutes(document.getElementById("f-end").value) <= toMinutes(document.getElementById("f-start").value)) { alert("End time must be after start time."); return; }
   const id = document.getElementById("f-id").value;
   const existing = id ? classes.find(c => c.id === id) : null;
   const data = {
@@ -845,10 +1004,11 @@ window.openPostponeModal = function(id) {
   const c = classes.find(x => x.id === id);
   if (!c) return;
   document.getElementById("pp-id").value = id;
-  document.getElementById("postpone-sub").innerText = c.subject + " (" + c.day + ", " + c.start + "-" + c.end + ")";
+  document.getElementById("postpone-sub").innerText = c.subject + " (" + c.day + ", " + fmtTime(c.start) + " - " + fmtTime(c.end) + ")";
   const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
   document.getElementById("pp-date").value = c.postponedDate || formatDate(tomorrow);
   document.getElementById("postpone-modal").classList.remove("hidden");
+  renderDateStrip("pp-date-strip", "pp-date", true);
 };
 
 window.closePostponeModal = function() {
